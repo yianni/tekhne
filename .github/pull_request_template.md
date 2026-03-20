@@ -4,6 +4,9 @@
 ## Why
 - 
 
+## Related
+- Closes #
+
 ## Verification
 - [ ] `sbt test`
 - [ ] `sbt scalafmtAll`
