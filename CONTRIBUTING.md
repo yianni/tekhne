@@ -2,14 +2,14 @@
 
 Thanks for contributing to `tekhne`.
 
-The project is intentionally small and learning-first. Favor clarity, correctness, and explicit code over clever abstractions or premature generalization.
+`tekhne` is intentionally small and learning-first. Favor clarity, correctness, and explicit code over clever abstractions.
 
-## Development philosophy
+## Philosophy
 
-When making changes, prefer:
+Prefer:
 - small, focused pull requests
 - explicit and readable code
-- changes that fit the scope of `tekhne`
+- changes that fit `tekhne`
 - improvements that keep the core easy to understand
 
 ## Branch names
@@ -19,7 +19,7 @@ Use short, descriptive branch names with a simple prefix when possible.
 Examples:
 - `feat/add-dataset-shuffling`
 - `fix/install-sbt-in-ci`
-- `docs/add-contributing-guidelines`
+- `docs/refine-contributing-guidelines`
 - `test/add-shape-validation-cases`
 
 ## Commit messages
@@ -41,27 +41,23 @@ Examples:
 - `docs: add README usage example`
 - `test: add numeric gradient coverage for small network`
 
-Prefer:
-- one clear change per commit
-- concise messages that describe the intent of the change
+Prefer one clear change per commit.
 
 ## Pull requests
 
-Try to keep pull requests small and focused.
+Keep pull requests small and focused.
 
 A good pull request should:
 - explain what changed
 - explain why it belongs in `tekhne`
-- include reasonable verification steps
+- include verification
 - call out anything intentionally left out
 
-If a change is large, consider splitting it into smaller issues or PRs.
+If a change is large, split it into smaller issues or PRs.
 
 ## Local checks
 
 Before opening a PR, run the checks that make sense for your change.
-
-Common commands:
 
 ```bash
 sbt test
@@ -70,7 +66,7 @@ sbt scalafixAll
 sbt "project core" clean coverage test coverageReport
 ```
 
-For demo-related changes, it can also help to run:
+For demo-related changes:
 
 ```bash
 sbt "demo/runMain tekhne.demo.runTekhne"
