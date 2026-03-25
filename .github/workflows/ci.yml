@@ -21,6 +21,8 @@ jobs:
       - uses: sbt/setup-sbt@v1
       - name: Check formatting
         run: sbt scalafmtCheckAll
+      - name: Check linting
+        run: sbt "scalafixAll --check"
       - name: Compile and test
         run: sbt compile test
 
