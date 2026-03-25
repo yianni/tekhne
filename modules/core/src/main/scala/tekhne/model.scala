@@ -64,7 +64,8 @@ object Network:
 
 final case class TrainingConfig(
     learningRate: Double,
-    epochs: Int
+    epochs: Int,
+    shuffleEachEpoch: Boolean = false
 ):
   require(learningRate > 0.0, s"learning rate must be positive, got $learningRate")
   require(epochs > 0, s"epochs must be positive, got $epochs")
