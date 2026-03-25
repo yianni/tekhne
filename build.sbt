@@ -26,6 +26,8 @@ lazy val core = (project in file("modules/core"))
   .settings(commonSettings)
   .settings(
     name := "tekhne",
+    coverageMinimumStmtTotal := 80,
+    coverageFailOnMinimum := true,
     libraryDependencies ++= Seq(
       "org.scalameta" %% "munit" % "1.2.4" % Test
     ),
