@@ -2,7 +2,9 @@ package tekhne
 
 import tekhne.Linalg._
 
+/** Loss functions used during training. */
 object Loss:
+  /** Mean squared error averaged across output dimensions. */
   def mse(output: Vec, target: Vec): Double =
     require(
       output.length == target.length,
@@ -13,6 +15,7 @@ object Loss:
       diff * diff
     }.sum / output.length.toDouble
 
+  /** Derivative of mean squared error with respect to the output activations. */
   def mseDerivative(output: Vec, target: Vec): Vec =
     require(
       output.length == target.length,

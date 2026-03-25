@@ -2,7 +2,9 @@ package tekhne
 
 import tekhne.Linalg._
 
+/** Prediction helpers for feed-forward networks. */
 object Forward:
+  /** Runs a forward pass and returns only the final output activations. */
   def predict(network: Network, input: Vec): Vec =
     forward(network, input).output
 

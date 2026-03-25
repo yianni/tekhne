@@ -4,6 +4,7 @@ import tekhne.Linalg._
 
 import scala.util.Random
 
+/** Training helpers built around plain stochastic gradient descent. */
 object Training:
   private def trainDeterministic(
       network: Network,
@@ -16,6 +17,7 @@ object Training:
         trainEpoch(current, data, config.learningRate)
       }
 
+  /** Applies one stochastic gradient descent update for a single training example. */
   def step(
       network: Network,
       input: Vec,
@@ -36,6 +38,7 @@ object Training:
 
     Network(updatedLayers)
 
+  /** Applies one full pass over the dataset in its current order. */
   def trainEpoch(
       network: Network,
       data: Vector[(Vec, Vec)],
@@ -45,6 +48,10 @@ object Training:
       step(current, input, target, learningRate)
     }
 
+  /** Trains without shuffling.
+    *
+    * If `shuffleEachEpoch` is enabled, use the overload that accepts a `Random`.
+    */
   def train(
       network: Network,
       data: Vector[(Vec, Vec)],
@@ -57,6 +64,10 @@ object Training:
     require(data.nonEmpty, "training data must be non-empty")
     trainDeterministic(network, data, config)
 
+  /** Trains for the configured number of epochs.
+    *
+    * When `shuffleEachEpoch` is enabled, `rng` controls the per-epoch dataset shuffling.
+    */
   def train(
       network: Network,
       data: Vector[(Vec, Vec)],
@@ -74,6 +85,7 @@ object Training:
         trainEpoch(current, epochData, config.learningRate)
       }
 
+  /** Computes the average dataset loss with the current network parameters. */
   def datasetLoss(network: Network, data: Vector[(Vec, Vec)]): Double =
     require(data.nonEmpty, "training data must be non-empty")
     data.map { case (input, target) => Loss.mse(Forward.predict(network, input), target) }.sum /
