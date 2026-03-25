@@ -36,6 +36,38 @@ For now, `tekhne` is intentionally minimal. It is not trying to compete with pro
 - Scalafix
 - scoverage
 
+## Minimal Example
+
+```scala
+import scala.util.Random
+
+import tekhne.*
+
+val trainingData = Vector(
+  (Vector(0.0, 0.0), Vector(0.0)),
+  (Vector(0.0, 1.0), Vector(1.0)),
+  (Vector(1.0, 0.0), Vector(1.0)),
+  (Vector(1.0, 1.0), Vector(0.0))
+)
+
+val network = Network.random(
+  layerSizes = Vector(2, 3, 1),
+  activations = Vector(Activation.Tanh, Activation.Sigmoid),
+  rng = new Random(42L)
+)
+
+val trained = Training.train(
+  network,
+  trainingData,
+  TrainingConfig(
+    learningRate = 0.1,
+    epochs = 50_000
+  )
+)
+
+val prediction = Forward.predict(trained, Vector(0.0, 1.0))
+```
+
 ## Commands
 
 ```bash
@@ -51,6 +83,6 @@ sbt "project core" clean coverage test coverageReport
 
 ## Roadmap
 
-- dataset shuffling during training
-- smarter initialization strategies
+- mini-batch training
 - additional losses and optimizers
+- training metrics and reporting
