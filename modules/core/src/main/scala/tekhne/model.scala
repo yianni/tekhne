@@ -35,6 +35,9 @@ final case class Network(layers: Vector[Dense]):
   }
 
 object Network:
+  private def glorotLimit(inputSize: Int, outputSize: Int): Double =
+    math.sqrt(6.0 / (inputSize + outputSize).toDouble)
+
   def random(
       layerSizes: Vector[Int],
       activations: Vector[Activation],
@@ -53,9 +56,9 @@ object Network:
       .map { case (sizes, activation) =>
         val inputSize  = sizes.head
         val outputSize = sizes(1)
-        val scale      = 1.0 / math.sqrt(inputSize.toDouble)
-        val weights    = Vector.fill(outputSize, inputSize)((rng.nextDouble() * 2.0 - 1.0) * scale)
-        val bias       = Vector.fill(outputSize)((rng.nextDouble() * 2.0 - 1.0) * scale)
+        val limit      = glorotLimit(inputSize, outputSize)
+        val weights    = Vector.fill(outputSize, inputSize)((rng.nextDouble() * 2.0 - 1.0) * limit)
+        val bias       = Vector.fill(outputSize)(0.0)
         Dense(weights, bias, activation)
       }
       .toVector
