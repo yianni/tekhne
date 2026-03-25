@@ -17,6 +17,7 @@ object Training:
         trainEpoch(current, data, config.learningRate)
       }
 
+  /** Applies one stochastic gradient descent update for a single training example. */
   def step(
       network: Network,
       input: Vec,
@@ -63,7 +64,10 @@ object Training:
     require(data.nonEmpty, "training data must be non-empty")
     trainDeterministic(network, data, config)
 
-  /** Trains for the configured number of epochs, optionally shuffling once per epoch. */
+  /** Trains for the configured number of epochs.
+    *
+    * When `shuffleEachEpoch` is enabled, `rng` controls the per-epoch dataset shuffling.
+    */
   def train(
       network: Network,
       data: Vector[(Vec, Vec)],

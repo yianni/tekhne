@@ -9,6 +9,7 @@ object ActivationOps:
       case Activation.Tanh     => math.tanh(x)
       case Activation.Identity => x
 
+  /** Computes the derivative of an activation from its pre-activation input value. */
   def derivativeFromZ(activation: Activation, z: Double): Double =
     activation match
       case Activation.Sigmoid  =>
