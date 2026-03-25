@@ -3,7 +3,7 @@ package tekhne
 import tekhne.Linalg._
 
 object Backprop:
-  def gradients(network: Network, input: Vec, target: Vec): Vector[DenseGrad] =
+  private[tekhne] def gradients(network: Network, input: Vec, target: Vec): Vector[DenseGrad] =
     require(network.layers.nonEmpty, "network must contain at least one layer")
 
     val forwardPass = Forward.forward(network, input)

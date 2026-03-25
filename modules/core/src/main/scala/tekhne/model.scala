@@ -73,18 +73,18 @@ final case class TrainingConfig(
   require(learningRate > 0.0, s"learning rate must be positive, got $learningRate")
   require(epochs > 0, s"epochs must be positive, got $epochs")
 
-final case class LayerCache(
+private[tekhne] final case class LayerCache(
     input: Vec,
     preActivation: Vec,
     output: Vec
 )
 
-final case class ForwardPass(
+private[tekhne] final case class ForwardPass(
     output: Vec,
     caches: Vector[LayerCache]
 )
 
-final case class DenseGrad(
+private[tekhne] final case class DenseGrad(
     dWeights: Mat,
     dBias: Vec
 )

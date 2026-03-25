@@ -6,7 +6,7 @@ object Forward:
   def predict(network: Network, input: Vec): Vec =
     forward(network, input).output
 
-  def forward(network: Network, input: Vec): ForwardPass =
+  private[tekhne] def forward(network: Network, input: Vec): ForwardPass =
     val (finalOutput, caches) = network.layers.foldLeft((input, Vector.empty[LayerCache])) {
       case ((current, acc), layer) =>
         requireRectangular(layer.weights)
