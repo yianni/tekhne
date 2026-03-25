@@ -1,5 +1,7 @@
 # tekhne
 
+[![CI](https://github.com/yianni/tekhne/actions/workflows/ci.yml/badge.svg)](https://github.com/yianni/tekhne/actions/workflows/ci.yml)
+
 A tiny neural network in idiomatic Scala 3.
 
 `tekhne` is a learning-first neural network project built from first principles in Scala 3. It focuses on immutable data, explicit math, and a clean structure that can grow into a reusable library.
