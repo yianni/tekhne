@@ -1,6 +1,8 @@
 package tekhne
 
+/** Small helpers for evaluating activation functions and their derivatives. */
 object ActivationOps:
+  /** Applies an activation to a single scalar value. */
   def apply(activation: Activation, x: Double): Double =
     activation match
       case Activation.Sigmoid  => 1.0 / (1.0 + math.exp(-x))
@@ -18,5 +20,6 @@ object ActivationOps:
       case Activation.Identity =>
         1.0
 
+  /** Applies an activation element-wise to a vector. */
   def activate(activation: Activation, values: Vec): Vec =
     values.map(apply(activation, _))

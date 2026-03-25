@@ -5,11 +5,16 @@ import scala.util.Random
 type Vec = Vector[Double]
 type Mat = Vector[Vec]
 
+/** Supported activation functions for dense layers. */
 enum Activation:
   case Sigmoid
   case Tanh
   case Identity
 
+/** A fully connected layer with a weight matrix, bias vector, and activation.
+  *
+  * The matrix shape is `outputSize x inputSize`.
+  */
 final case class Dense(
     weights: Mat,
     bias: Vec,
@@ -23,6 +28,7 @@ final case class Dense(
     s"bias size ${bias.length} must match output size ${weights.length}"
   )
 
+/** An immutable feed-forward network made of dense layers. */
 final case class Network(layers: Vector[Dense]):
   require(layers.nonEmpty, "network must contain at least one layer")
   layers.sliding(2).foreach {
@@ -38,6 +44,10 @@ object Network:
   private def glorotLimit(inputSize: Int, outputSize: Int): Double =
     math.sqrt(6.0 / (inputSize + outputSize).toDouble)
 
+  /** Builds a randomly initialized dense network from adjacent layer sizes.
+    *
+    * Weights use a small Glorot-style uniform initialization and biases start at zero.
+    */
   def random(
       layerSizes: Vector[Int],
       activations: Vector[Activation],
@@ -65,6 +75,10 @@ object Network:
 
     Network(layers)
 
+/** Training settings for gradient descent.
+  *
+  * When `shuffleEachEpoch` is enabled, use the `Training.train` overload that accepts a `Random`.
+  */
 final case class TrainingConfig(
     learningRate: Double,
     epochs: Int,
