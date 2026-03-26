@@ -2,6 +2,8 @@ package tekhne
 
 import scala.util.Random
 
+import scala.collection.mutable.ArrayBuffer
+
 class TrainingSuite extends munit.FunSuite:
   private val xorData = Vector(
     (Vector(0.0, 0.0), Vector(0.0)),
@@ -283,4 +285,69 @@ class TrainingSuite extends munit.FunSuite:
     assert(predictions(1) > 0.9)
     assert(predictions(2) > 0.9)
     assert(predictions(3) < 0.1)
+  }
+
+  test("training callback is invoked once per epoch with increasing epoch numbers") {
+    val network = Network.random(
+      layerSizes = Vector(2, 3, 1),
+      activations = Vector(Activation.Tanh, Activation.Sigmoid),
+      rng = new Random(42L)
+    )
+
+    val config = TrainingConfig(
+      learningRate = 0.1,
+      epochs = 4,
+      batchSize = 2
+    )
+
+    val observed = ArrayBuffer.empty[EpochMetrics]
+
+    Training.train(network, xorData, config, metrics => observed += metrics)
+
+    assertEquals(observed.map(_.epoch).toVector, Vector(1, 2, 3, 4))
+    assert(observed.forall(metrics => metrics.loss.isFinite))
+  }
+
+  test("reported losses decrease during BCE training") {
+    val network = Network.random(
+      layerSizes = Vector(2, 3, 1),
+      activations = Vector(Activation.Tanh, Activation.Sigmoid),
+      rng = new Random(42L)
+    )
+
+    val config = TrainingConfig(
+      learningRate = 0.1,
+      epochs = 10,
+      batchSize = 2,
+      loss = LossFunction.BinaryCrossEntropy
+    )
+
+    val observed = ArrayBuffer.empty[EpochMetrics]
+
+    Training.train(network, xorData, config, metrics => observed += metrics)
+
+    assertEquals(observed.length, 10)
+    assert(observed.last.loss < observed.head.loss)
+  }
+
+  test("metrics callback works with shuffled training when rng is provided") {
+    val network = Network.random(
+      layerSizes = Vector(2, 3, 1),
+      activations = Vector(Activation.Tanh, Activation.Sigmoid),
+      rng = new Random(42L)
+    )
+
+    val config = TrainingConfig(
+      learningRate = 0.1,
+      epochs = 5,
+      shuffleEachEpoch = true,
+      batchSize = 2
+    )
+
+    val observed = ArrayBuffer.empty[EpochMetrics]
+
+    Training.train(network, xorData, config, new Random(42L), metrics => observed += metrics)
+
+    assertEquals(observed.map(_.epoch).toVector, Vector(1, 2, 3, 4, 5))
+    assert(observed.forall(metrics => metrics.loss.isFinite))
   }

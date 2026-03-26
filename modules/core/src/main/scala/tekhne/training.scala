@@ -6,6 +6,8 @@ import scala.util.Random
 
 /** Training helpers built around plain stochastic gradient descent. */
 object Training:
+  private def noOpMetricsHandler(metrics: EpochMetrics): Unit = ()
+
   private def batchData(
       data: Vector[(Vec, Vec)],
       batchSize: Int
@@ -50,13 +52,14 @@ object Training:
   private def trainDeterministic(
       network: Network,
       data: Vector[(Vec, Vec)],
-      config: TrainingConfig
-  ): Network =
-    Iterator
-      .fill(config.epochs)(())
-      .foldLeft(network) { case (current, _) =>
-        trainEpoch(current, data, config.learningRate, config.batchSize, config.loss)
-      }
+      config: TrainingConfig,
+      onEpochComplete: EpochMetrics => Unit = noOpMetricsHandler
+  ): Network = (1 to config.epochs)
+    .foldLeft(network) { case (current, epoch) =>
+      val updated = trainEpoch(current, data, config.learningRate, config.batchSize, config.loss)
+      onEpochComplete(EpochMetrics(epoch, datasetLoss(updated, data, config.loss)))
+      updated
+    }
 
   /** Applies one stochastic gradient descent update for a single training example. */
   def step(
@@ -109,6 +112,19 @@ object Training:
     require(data.nonEmpty, "training data must be non-empty")
     trainDeterministic(network, data, config)
 
+  def train(
+      network: Network,
+      data: Vector[(Vec, Vec)],
+      config: TrainingConfig,
+      onEpochComplete: EpochMetrics => Unit
+  ): Network =
+    require(
+      !config.shuffleEachEpoch,
+      "shuffleEachEpoch = true requires the Training.train overload that accepts a Random"
+    )
+    require(data.nonEmpty, "training data must be non-empty")
+    trainDeterministic(network, data, config, onEpochComplete)
+
   /** Trains for the configured number of epochs.
     *
     * When `shuffleEachEpoch` is enabled, `rng` controls the per-epoch dataset shuffling.
@@ -119,15 +135,26 @@ object Training:
       config: TrainingConfig,
       rng: Random
   ): Network =
+    train(network, data, config, rng, noOpMetricsHandler)
+
+  def train(
+      network: Network,
+      data: Vector[(Vec, Vec)],
+      config: TrainingConfig,
+      rng: Random,
+      onEpochComplete: EpochMetrics => Unit
+  ): Network =
     require(data.nonEmpty, "training data must be non-empty")
 
-    Iterator
-      .fill(config.epochs)(())
-      .foldLeft(network) { case (current, _) =>
+    (1 to config.epochs)
+      .foldLeft(network) { case (current, epoch) =>
         val epochData =
           if config.shuffleEachEpoch then rng.shuffle(data)
           else data
-        trainEpoch(current, epochData, config.learningRate, config.batchSize, config.loss)
+        val updated   =
+          trainEpoch(current, epochData, config.learningRate, config.batchSize, config.loss)
+        onEpochComplete(EpochMetrics(epoch, datasetLoss(updated, data, config.loss)))
+        updated
       }
 
   /** Computes the average dataset loss with the current network parameters. */
