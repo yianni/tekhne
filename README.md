@@ -85,6 +85,6 @@ sbt "project core" clean coverage test coverageReport
 
 ## Roadmap
 
-- mini-batch training
+- binary cross-entropy loss
 - additional losses and optimizers
 - training metrics and reporting
