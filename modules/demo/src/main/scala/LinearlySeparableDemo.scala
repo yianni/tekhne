@@ -1,6 +1,6 @@
 package tekhne.demo
 
-import tekhne.*
+import tekhne._
 
 import scala.util.Random
 
