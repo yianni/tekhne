@@ -11,6 +11,17 @@ class TrainingSuite extends munit.FunSuite:
     (Vector(1.0, 1.0), Vector(0.0))
   )
 
+  private val linearlySeparableData = Vector(
+    (Vector(0.0, 0.1), Vector(0.0)),
+    (Vector(0.1, 0.2), Vector(0.0)),
+    (Vector(0.2, 0.1), Vector(0.0)),
+    (Vector(0.3, 0.2), Vector(0.0)),
+    (Vector(0.7, 0.8), Vector(1.0)),
+    (Vector(0.8, 0.9), Vector(1.0)),
+    (Vector(0.9, 0.8), Vector(1.0)),
+    (Vector(0.8, 0.7), Vector(1.0))
+  )
+
   test("training lowers xor loss") {
     val network = Network.random(
       layerSizes = Vector(2, 3, 1),
@@ -349,4 +360,32 @@ class TrainingSuite extends munit.FunSuite:
 
     assertEquals(observed.map(_.epoch).toVector, Vector(1, 2, 3, 4, 5))
     assert(observed.forall(metrics => metrics.loss.isFinite))
+  }
+
+  test("linearly separable dataset learns successfully") {
+    val network = Network.random(
+      layerSizes = Vector(2, 1),
+      activations = Vector(Activation.Sigmoid),
+      rng = new Random(42L)
+    )
+
+    val config = TrainingConfig(
+      learningRate = 0.1,
+      epochs = 5_000,
+      shuffleEachEpoch = true,
+      batchSize = 2,
+      loss = LossFunction.BinaryCrossEntropy
+    )
+
+    val initialLoss = Training.datasetLoss(network, linearlySeparableData, config.loss)
+    val trained     = Training.train(network, linearlySeparableData, config, new Random(42L))
+    val finalLoss   = Training.datasetLoss(trained, linearlySeparableData, config.loss)
+    val predictions = linearlySeparableData.map { case (input, _) =>
+      Forward.predict(trained, input).head
+    }
+
+    assert(finalLoss < initialLoss)
+    assert(finalLoss < 0.02)
+    assert(predictions.take(4).forall(_ < 0.1))
+    assert(predictions.drop(4).forall(_ > 0.9))
   }
