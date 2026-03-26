@@ -3,7 +3,12 @@ package tekhne
 import tekhne.Linalg._
 
 object Backprop:
-  private[tekhne] def gradients(network: Network, input: Vec, target: Vec): Vector[DenseGrad] =
+  private[tekhne] def gradients(
+      network: Network,
+      input: Vec,
+      target: Vec,
+      loss: LossFunction = LossFunction.MeanSquaredError
+  ): Vector[DenseGrad] =
     require(network.layers.nonEmpty, "network must contain at least one layer")
 
     val forwardPass = Forward.forward(network, input)
@@ -18,7 +23,7 @@ object Backprop:
 
     val outputDelta =
       Loss
-        .mseDerivative(forwardPass.output, target)
+        .derivative(loss, forwardPass.output, target)
         .hadamard(lastCache.preActivation.map(ActivationOps.derivativeFromZ(
           lastLayer.activation,
           _

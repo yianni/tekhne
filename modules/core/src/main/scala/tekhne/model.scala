@@ -11,6 +11,11 @@ enum Activation:
   case Tanh
   case Identity
 
+/** Supported loss functions for training and evaluation. */
+enum LossFunction:
+  case MeanSquaredError
+  case BinaryCrossEntropy
+
 /** A fully connected layer with a weight matrix, bias vector, and activation.
   *
   * The matrix shape is `outputSize x inputSize`.
@@ -83,7 +88,8 @@ final case class TrainingConfig(
     learningRate: Double,
     epochs: Int,
     shuffleEachEpoch: Boolean = false,
-    batchSize: Int = 1
+    batchSize: Int = 1,
+    loss: LossFunction = LossFunction.MeanSquaredError
 ):
   require(learningRate > 0.0, s"learning rate must be positive, got $learningRate")
   require(epochs > 0, s"epochs must be positive, got $epochs")
