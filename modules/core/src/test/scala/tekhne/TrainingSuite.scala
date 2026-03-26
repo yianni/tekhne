@@ -1,8 +1,7 @@
 package tekhne
 
-import scala.util.Random
-
 import scala.collection.mutable.ArrayBuffer
+import scala.util.Random
 
 class TrainingSuite extends munit.FunSuite:
   private val xorData = Vector(
