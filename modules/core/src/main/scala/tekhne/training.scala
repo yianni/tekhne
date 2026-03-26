@@ -27,13 +27,14 @@ object Training:
   private def stepBatch(
       network: Network,
       batch: Vector[(Vec, Vec)],
-      learningRate: Double
+      learningRate: Double,
+      loss: LossFunction
   ): Network =
     require(batch.nonEmpty, "mini-batch must be non-empty")
     require(learningRate > 0.0, s"learning rate must be positive, got $learningRate")
 
     val averagedGrads = averageGradients(batch.map { case (input, target) =>
-      Backprop.gradients(network, input, target)
+      Backprop.gradients(network, input, target, loss)
     })
 
     val updatedLayers = network.layers.zip(averagedGrads).map { case (layer, grad) =>
@@ -54,7 +55,7 @@ object Training:
     Iterator
       .fill(config.epochs)(())
       .foldLeft(network) { case (current, _) =>
-        trainEpoch(current, data, config.learningRate, config.batchSize)
+        trainEpoch(current, data, config.learningRate, config.batchSize, config.loss)
       }
 
   /** Applies one stochastic gradient descent update for a single training example. */
@@ -62,11 +63,12 @@ object Training:
       network: Network,
       input: Vec,
       target: Vec,
-      learningRate: Double
+      learningRate: Double,
+      loss: LossFunction = LossFunction.MeanSquaredError
   ): Network =
     require(learningRate > 0.0, s"learning rate must be positive, got $learningRate")
 
-    val grads = Backprop.gradients(network, input, target)
+    val grads = Backprop.gradients(network, input, target, loss)
 
     val updatedLayers = network.layers.zip(grads).map { case (layer, grad) =>
       val updatedWeights = layer.weights.zip(grad.dWeights).map { case (weightsRow, gradRow) =>
@@ -83,11 +85,12 @@ object Training:
       network: Network,
       data: Vector[(Vec, Vec)],
       learningRate: Double,
-      batchSize: Int = 1
+      batchSize: Int = 1,
+      loss: LossFunction = LossFunction.MeanSquaredError
   ): Network =
     require(batchSize > 0, s"batch size must be positive, got $batchSize")
     batchData(data, batchSize).foldLeft(network) { case (current, batch) =>
-      stepBatch(current, batch, learningRate)
+      stepBatch(current, batch, learningRate, loss)
     }
 
   /** Trains without shuffling.
@@ -124,11 +127,17 @@ object Training:
         val epochData =
           if config.shuffleEachEpoch then rng.shuffle(data)
           else data
-        trainEpoch(current, epochData, config.learningRate, config.batchSize)
+        trainEpoch(current, epochData, config.learningRate, config.batchSize, config.loss)
       }
 
   /** Computes the average dataset loss with the current network parameters. */
-  def datasetLoss(network: Network, data: Vector[(Vec, Vec)]): Double =
+  def datasetLoss(
+      network: Network,
+      data: Vector[(Vec, Vec)],
+      loss: LossFunction = LossFunction.MeanSquaredError
+  ): Double =
     require(data.nonEmpty, "training data must be non-empty")
-    data.map { case (input, target) => Loss.mse(Forward.predict(network, input), target) }.sum /
+    data.map { case (input, target) =>
+      Loss.value(loss, Forward.predict(network, input), target)
+    }.sum /
       data.length.toDouble

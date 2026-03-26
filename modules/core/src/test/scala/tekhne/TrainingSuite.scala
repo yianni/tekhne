@@ -234,3 +234,53 @@ class TrainingSuite extends munit.FunSuite:
 
     assertEquals(trained1, trained2)
   }
+
+  test("binary cross-entropy training lowers xor loss") {
+    val network = Network.random(
+      layerSizes = Vector(2, 3, 1),
+      activations = Vector(Activation.Tanh, Activation.Sigmoid),
+      rng = new Random(42L)
+    )
+
+    val config = TrainingConfig(
+      learningRate = 0.1,
+      epochs = 50_000,
+      batchSize = 2,
+      loss = LossFunction.BinaryCrossEntropy
+    )
+
+    val initialLoss = Training.datasetLoss(network, xorData, config.loss)
+    val trained     = Training.train(network, xorData, config)
+    val finalLoss   = Training.datasetLoss(trained, xorData, config.loss)
+
+    assert(finalLoss < initialLoss)
+    assert(finalLoss < 0.02)
+  }
+
+  test("binary cross-entropy training still separates xor classes") {
+    val network = Network.random(
+      layerSizes = Vector(2, 3, 1),
+      activations = Vector(Activation.Tanh, Activation.Sigmoid),
+      rng = new Random(42L)
+    )
+
+    val trained = Training.train(
+      network,
+      xorData,
+      TrainingConfig(
+        learningRate = 0.1,
+        epochs = 50_000,
+        batchSize = 2,
+        loss = LossFunction.BinaryCrossEntropy
+      )
+    )
+
+    val predictions = xorData.map { case (input, _) =>
+      Forward.predict(trained, input).head
+    }
+
+    assert(predictions(0) < 0.1)
+    assert(predictions(1) > 0.9)
+    assert(predictions(2) > 0.9)
+    assert(predictions(3) < 0.1)
+  }
