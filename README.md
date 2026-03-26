@@ -23,7 +23,7 @@ A tiny neural network in idiomatic Scala 3.
 - dense feed-forward layers
 - forward pass and backpropagation
 - stochastic gradient descent training
-- XOR and AND demo programs
+- XOR, AND, and linearly separable demo programs
 
 ## Non-goals
 
@@ -77,6 +77,7 @@ sbt compile
 sbt test
 sbt "demo/runMain tekhne.demo.runTekhne"
 sbt "demo/runMain tekhne.demo.runAndGateDemo"
+sbt "demo/runMain tekhne.demo.runLinearlySeparableDemo"
 sbt core/test
 sbt scalafmtAll
 sbt scalafixAll
@@ -85,6 +86,7 @@ sbt "project core" clean coverage test coverageReport
 
 ## Roadmap
 
-- binary cross-entropy loss
+- another small demo dataset
+- define the 0.1.0 milestone
+- validate loss and output activation compatibility
 - additional losses and optimizers
-- training metrics and reporting
