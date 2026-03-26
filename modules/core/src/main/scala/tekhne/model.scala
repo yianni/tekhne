@@ -95,6 +95,12 @@ final case class TrainingConfig(
   require(epochs > 0, s"epochs must be positive, got $epochs")
   require(batchSize > 0, s"batch size must be positive, got $batchSize")
 
+/** Loss snapshot reported after an epoch completes. */
+final case class EpochMetrics(
+    epoch: Int,
+    loss: Double
+)
+
 private[tekhne] final case class LayerCache(
     input: Vec,
     preActivation: Vec,
