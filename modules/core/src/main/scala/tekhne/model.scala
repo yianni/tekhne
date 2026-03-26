@@ -82,10 +82,12 @@ object Network:
 final case class TrainingConfig(
     learningRate: Double,
     epochs: Int,
-    shuffleEachEpoch: Boolean = false
+    shuffleEachEpoch: Boolean = false,
+    batchSize: Int = 1
 ):
   require(learningRate > 0.0, s"learning rate must be positive, got $learningRate")
   require(epochs > 0, s"epochs must be positive, got $epochs")
+  require(batchSize > 0, s"batch size must be positive, got $batchSize")
 
 private[tekhne] final case class LayerCache(
     input: Vec,
