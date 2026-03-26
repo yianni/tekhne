@@ -143,3 +143,94 @@ class TrainingSuite extends munit.FunSuite:
 
     assertNotEquals(trained1, trained2)
   }
+
+  test("batch size one matches existing training behavior") {
+    val network = Network.random(
+      layerSizes = Vector(2, 3, 1),
+      activations = Vector(Activation.Tanh, Activation.Sigmoid),
+      rng = new Random(42L)
+    )
+
+    val config = TrainingConfig(
+      learningRate = 0.1,
+      epochs = 50_000,
+      batchSize = 1
+    )
+
+    val trainedWithDefault  = Training.train(network, xorData, TrainingConfig(0.1, 50_000))
+    val trainedWithBatching = Training.train(network, xorData, config)
+
+    assertEquals(trainedWithBatching, trainedWithDefault)
+  }
+
+  test("mini-batch training lowers xor loss") {
+    val network = Network.random(
+      layerSizes = Vector(2, 3, 1),
+      activations = Vector(Activation.Tanh, Activation.Sigmoid),
+      rng = new Random(42L)
+    )
+
+    val initialLoss = Training.datasetLoss(network, xorData)
+
+    val trained = Training.train(
+      network,
+      xorData,
+      TrainingConfig(
+        learningRate = 0.1,
+        epochs = 50_000,
+        batchSize = 2
+      )
+    )
+
+    val finalLoss = Training.datasetLoss(trained, xorData)
+
+    assert(finalLoss < initialLoss)
+    assert(finalLoss < 0.05)
+  }
+
+  test("mini-batch training still separates xor classes") {
+    val network = Network.random(
+      layerSizes = Vector(2, 3, 1),
+      activations = Vector(Activation.Tanh, Activation.Sigmoid),
+      rng = new Random(42L)
+    )
+
+    val trained = Training.train(
+      network,
+      xorData,
+      TrainingConfig(
+        learningRate = 0.1,
+        epochs = 50_000,
+        batchSize = 2
+      )
+    )
+
+    val predictions = xorData.map { case (input, _) =>
+      Forward.predict(trained, input).head
+    }
+
+    assert(predictions(0) < 0.2)
+    assert(predictions(1) > 0.8)
+    assert(predictions(2) > 0.8)
+    assert(predictions(3) < 0.2)
+  }
+
+  test("shuffled mini-batch training is deterministic with a fixed seed") {
+    val network = Network.random(
+      layerSizes = Vector(2, 3, 1),
+      activations = Vector(Activation.Tanh, Activation.Sigmoid),
+      rng = new Random(42L)
+    )
+
+    val config = TrainingConfig(
+      learningRate = 0.1,
+      epochs = 50_000,
+      shuffleEachEpoch = true,
+      batchSize = 2
+    )
+
+    val trained1 = Training.train(network, xorData, config, new Random(42L))
+    val trained2 = Training.train(network, xorData, config, new Random(42L))
+
+    assertEquals(trained1, trained2)
+  }

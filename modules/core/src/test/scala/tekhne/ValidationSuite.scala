@@ -53,4 +53,10 @@ class ValidationSuite extends munit.FunSuite:
     ) {
       TrainingConfig(learningRate = 0.1, epochs = 0)
     }
+
+    interceptMessage[IllegalArgumentException](
+      "requirement failed: batch size must be positive, got 0"
+    ) {
+      TrainingConfig(learningRate = 0.1, epochs = 10, batchSize = 0)
+    }
   }
