@@ -41,7 +41,8 @@ import scala.util.Random
     new Random(42L),
     metrics =>
       if metrics.epoch % 500 == 0 then
-        println(f"epoch ${metrics.epoch}%4d loss=${metrics.loss}%.6f")
+        val accuracy = metrics.accuracy.fold("n/a")(value => f"$value%.3f")
+        println(f"epoch ${metrics.epoch}%4d loss=${metrics.loss}%.6f accuracy=$accuracy")
   )
 
   val finalLoss = Training.datasetLoss(trained, data, config.loss)

@@ -24,7 +24,12 @@ import scala.util.Random
     TrainingConfig(
       learningRate = 0.2,
       epochs = 20_000
-    )
+    ),
+    new Random(7L),
+    metrics =>
+      if metrics.epoch % 5_000 == 0 then
+        val accuracy = metrics.accuracy.fold("n/a")(value => f"$value%.3f")
+        println(f"epoch ${metrics.epoch}%5d loss=${metrics.loss}%.6f accuracy=$accuracy")
   )
 
   println("AND gate demo")

@@ -28,6 +28,24 @@ object Training:
   ): Vector[Vector[(Vec, Vec)]] =
     data.grouped(batchSize).map(_.toVector).toVector
 
+  private def datasetAccuracy(
+      network: Network,
+      data: Vector[(Vec, Vec)]
+  ): Option[Double] =
+    val binaryCompatible = data.forall { case (input, target) =>
+      target.length == 1 && Forward.predict(network, input).length == 1 &&
+      (target.head == 0.0 || target.head == 1.0)
+    }
+
+    if !binaryCompatible then None
+    else
+      val correct = data.count { case (input, target) =>
+        val prediction     = Forward.predict(network, input).head
+        val predictedLabel = if prediction >= 0.5 then 1.0 else 0.0
+        predictedLabel == target.head
+      }
+      Some(correct.toDouble / data.length.toDouble)
+
   private def averageGradients(grads: Vector[Vector[DenseGrad]]): Vector[DenseGrad] =
     require(grads.nonEmpty, "mini-batch gradients must be non-empty")
 
@@ -84,7 +102,13 @@ object Training:
 
         val updated =
           trainEpoch(current, epochData, config.learningRate, config.batchSize, config.loss)
-        runtime.onEpochComplete(EpochMetrics(epoch, datasetLoss(updated, data, config.loss)))
+        runtime.onEpochComplete(
+          EpochMetrics(
+            epoch = epoch,
+            loss = datasetLoss(updated, data, config.loss),
+            accuracy = datasetAccuracy(updated, data)
+          )
+        )
         updated
       }
 
