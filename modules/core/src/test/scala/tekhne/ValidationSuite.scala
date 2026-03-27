@@ -60,3 +60,49 @@ class ValidationSuite extends munit.FunSuite:
       TrainingConfig(learningRate = 0.1, epochs = 10, batchSize = 0)
     }
   }
+
+  test("binary cross-entropy requires sigmoid output for training") {
+    val network = Network(
+      Vector(
+        Dense(
+          weights = Vector(Vector(0.1, 0.2)),
+          bias = Vector(0.0),
+          activation = Activation.Identity
+        )
+      )
+    )
+
+    val config = TrainingConfig(
+      learningRate = 0.1,
+      epochs = 10,
+      loss = LossFunction.BinaryCrossEntropy
+    )
+
+    interceptMessage[IllegalArgumentException](
+      "requirement failed: binary cross-entropy requires a sigmoid output layer"
+    ) {
+      Training.train(network, Vector((Vector(0.0, 1.0), Vector(1.0))), config)
+    }
+  }
+
+  test("binary cross-entropy requires sigmoid output for dataset loss") {
+    val network = Network(
+      Vector(
+        Dense(
+          weights = Vector(Vector(0.1, 0.2)),
+          bias = Vector(0.0),
+          activation = Activation.Identity
+        )
+      )
+    )
+
+    interceptMessage[IllegalArgumentException](
+      "requirement failed: binary cross-entropy requires a sigmoid output layer"
+    ) {
+      Training.datasetLoss(
+        network,
+        Vector((Vector(0.0, 1.0), Vector(1.0))),
+        LossFunction.BinaryCrossEntropy
+      )
+    }
+  }

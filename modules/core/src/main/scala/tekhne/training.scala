@@ -8,6 +8,15 @@ import scala.util.Random
 object Training:
   private def noOpMetricsHandler(metrics: EpochMetrics): Unit = ()
 
+  private def requireLossCompatibility(network: Network, loss: LossFunction): Unit =
+    loss match
+      case LossFunction.MeanSquaredError   => ()
+      case LossFunction.BinaryCrossEntropy =>
+        require(
+          network.layers.last.activation == Activation.Sigmoid,
+          "binary cross-entropy requires a sigmoid output layer"
+        )
+
   private def batchData(
       data: Vector[(Vec, Vec)],
       batchSize: Int
@@ -70,6 +79,7 @@ object Training:
       loss: LossFunction = LossFunction.MeanSquaredError
   ): Network =
     require(learningRate > 0.0, s"learning rate must be positive, got $learningRate")
+    requireLossCompatibility(network, loss)
 
     val grads = Backprop.gradients(network, input, target, loss)
 
@@ -92,6 +102,7 @@ object Training:
       loss: LossFunction = LossFunction.MeanSquaredError
   ): Network =
     require(batchSize > 0, s"batch size must be positive, got $batchSize")
+    requireLossCompatibility(network, loss)
     batchData(data, batchSize).foldLeft(network) { case (current, batch) =>
       stepBatch(current, batch, learningRate, loss)
     }
@@ -110,6 +121,7 @@ object Training:
       "shuffleEachEpoch = true requires the Training.train overload that accepts a Random"
     )
     require(data.nonEmpty, "training data must be non-empty")
+    requireLossCompatibility(network, config.loss)
     trainDeterministic(network, data, config)
 
   def train(
@@ -123,6 +135,7 @@ object Training:
       "shuffleEachEpoch = true requires the Training.train overload that accepts a Random"
     )
     require(data.nonEmpty, "training data must be non-empty")
+    requireLossCompatibility(network, config.loss)
     trainDeterministic(network, data, config, onEpochComplete)
 
   /** Trains for the configured number of epochs.
@@ -145,6 +158,7 @@ object Training:
       onEpochComplete: EpochMetrics => Unit
   ): Network =
     require(data.nonEmpty, "training data must be non-empty")
+    requireLossCompatibility(network, config.loss)
 
     (1 to config.epochs)
       .foldLeft(network) { case (current, epoch) =>
@@ -164,6 +178,7 @@ object Training:
       loss: LossFunction = LossFunction.MeanSquaredError
   ): Double =
     require(data.nonEmpty, "training data must be non-empty")
+    requireLossCompatibility(network, loss)
     data.map { case (input, target) =>
       Loss.value(loss, Forward.predict(network, input), target)
     }.sum /
