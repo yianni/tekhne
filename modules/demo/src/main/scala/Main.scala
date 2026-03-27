@@ -27,7 +27,12 @@ import scala.util.Random
     TrainingConfig(
       learningRate = 0.1,
       epochs = 50_000
-    )
+    ),
+    new Random(42L),
+    metrics =>
+      if metrics.epoch % 10_000 == 0 then
+        val accuracy = metrics.accuracy.fold("n/a")(value => f"$value%.3f")
+        println(f"epoch ${metrics.epoch}%5d loss=${metrics.loss}%.6f accuracy=$accuracy")
   )
 
   val finalLoss = Training.datasetLoss(trained, data)

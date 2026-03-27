@@ -317,6 +317,7 @@ class TrainingSuite extends munit.FunSuite:
 
     assertEquals(observed.map(_.epoch).toVector, Vector(1, 2, 3, 4))
     assert(observed.forall(metrics => metrics.loss.isFinite))
+    assert(observed.forall(_.accuracy.isDefined))
   }
 
   test("reported losses decrease during BCE training") {
@@ -339,6 +340,9 @@ class TrainingSuite extends munit.FunSuite:
 
     assertEquals(observed.length, 10)
     assert(observed.last.loss < observed.head.loss)
+    assert(observed.forall(_.accuracy.isDefined))
+    assert(observed.last.accuracy.get >= observed.head.accuracy.get)
+    assert(observed.last.accuracy.get >= 0.75)
   }
 
   test("metrics callback works with shuffled training when rng is provided") {
@@ -361,6 +365,33 @@ class TrainingSuite extends munit.FunSuite:
 
     assertEquals(observed.map(_.epoch).toVector, Vector(1, 2, 3, 4, 5))
     assert(observed.forall(metrics => metrics.loss.isFinite))
+    assert(observed.forall(_.accuracy.isDefined))
+  }
+
+  test("accuracy is absent when targets are not binary-compatible") {
+    val regressionData = Vector(
+      (Vector(0.0), Vector(0.25)),
+      (Vector(1.0), Vector(0.75))
+    )
+
+    val network = Network.random(
+      layerSizes = Vector(1, 1),
+      activations = Vector(Activation.Sigmoid),
+      rng = new Random(42L)
+    )
+
+    val observed = ArrayBuffer.empty[EpochMetrics]
+
+    Training.train(
+      network,
+      regressionData,
+      TrainingConfig(learningRate = 0.1, epochs = 2),
+      new Random(0L),
+      metrics => observed += metrics
+    )
+
+    assertEquals(observed.length, 2)
+    assert(observed.forall(_.accuracy.isEmpty))
   }
 
   test("linearly separable dataset learns successfully") {
