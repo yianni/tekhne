@@ -8,6 +8,11 @@ import scala.util.Random
 object Training:
   private def noOpMetricsHandler(metrics: EpochMetrics): Unit = ()
 
+  private final case class TrainingRuntime(
+      rng: Option[Random],
+      onEpochComplete: EpochMetrics => Unit
+  )
+
   private def requireLossCompatibility(network: Network, loss: LossFunction): Unit =
     loss match
       case LossFunction.MeanSquaredError   => ()
@@ -58,17 +63,30 @@ object Training:
 
     Network(updatedLayers)
 
-  private def trainDeterministic(
+  private def trainWithRuntime(
       network: Network,
       data: Vector[(Vec, Vec)],
       config: TrainingConfig,
-      onEpochComplete: EpochMetrics => Unit = noOpMetricsHandler
-  ): Network = (1 to config.epochs)
-    .foldLeft(network) { case (current, epoch) =>
-      val updated = trainEpoch(current, data, config.learningRate, config.batchSize, config.loss)
-      onEpochComplete(EpochMetrics(epoch, datasetLoss(updated, data, config.loss)))
-      updated
-    }
+      runtime: TrainingRuntime
+  ): Network =
+    require(data.nonEmpty, "training data must be non-empty")
+    requireLossCompatibility(network, config.loss)
+    require(
+      !config.shuffleEachEpoch || runtime.rng.nonEmpty,
+      "shuffleEachEpoch = true requires the fully explicit Training.train overload"
+    )
+
+    (1 to config.epochs)
+      .foldLeft(network) { case (current, epoch) =>
+        val epochData = runtime.rng match
+          case Some(rng) if config.shuffleEachEpoch => rng.shuffle(data)
+          case _                                    => data
+
+        val updated =
+          trainEpoch(current, epochData, config.learningRate, config.batchSize, config.loss)
+        runtime.onEpochComplete(EpochMetrics(epoch, datasetLoss(updated, data, config.loss)))
+        updated
+      }
 
   /** Applies one stochastic gradient descent update for a single training example. */
   def step(
@@ -109,47 +127,20 @@ object Training:
 
   /** Trains without shuffling.
     *
-    * If `shuffleEachEpoch` is enabled, use the overload that accepts a `Random`.
+    * If `shuffleEachEpoch` is enabled, use the fully explicit overload.
     */
   def train(
       network: Network,
       data: Vector[(Vec, Vec)],
       config: TrainingConfig
   ): Network =
-    require(
-      !config.shuffleEachEpoch,
-      "shuffleEachEpoch = true requires the Training.train overload that accepts a Random"
-    )
-    require(data.nonEmpty, "training data must be non-empty")
-    requireLossCompatibility(network, config.loss)
-    trainDeterministic(network, data, config)
-
-  def train(
-      network: Network,
-      data: Vector[(Vec, Vec)],
-      config: TrainingConfig,
-      onEpochComplete: EpochMetrics => Unit
-  ): Network =
-    require(
-      !config.shuffleEachEpoch,
-      "shuffleEachEpoch = true requires the Training.train overload that accepts a Random"
-    )
-    require(data.nonEmpty, "training data must be non-empty")
-    requireLossCompatibility(network, config.loss)
-    trainDeterministic(network, data, config, onEpochComplete)
+    trainWithRuntime(network, data, config, TrainingRuntime(None, noOpMetricsHandler))
 
   /** Trains for the configured number of epochs.
     *
-    * When `shuffleEachEpoch` is enabled, `rng` controls the per-epoch dataset shuffling.
+    * `rng` controls per-epoch dataset shuffling when enabled and `onEpochComplete` receives loss
+    * snapshots after each epoch.
     */
-  def train(
-      network: Network,
-      data: Vector[(Vec, Vec)],
-      config: TrainingConfig,
-      rng: Random
-  ): Network =
-    train(network, data, config, rng, noOpMetricsHandler)
-
   def train(
       network: Network,
       data: Vector[(Vec, Vec)],
@@ -157,19 +148,7 @@ object Training:
       rng: Random,
       onEpochComplete: EpochMetrics => Unit
   ): Network =
-    require(data.nonEmpty, "training data must be non-empty")
-    requireLossCompatibility(network, config.loss)
-
-    (1 to config.epochs)
-      .foldLeft(network) { case (current, epoch) =>
-        val epochData =
-          if config.shuffleEachEpoch then rng.shuffle(data)
-          else data
-        val updated   =
-          trainEpoch(current, epochData, config.learningRate, config.batchSize, config.loss)
-        onEpochComplete(EpochMetrics(epoch, datasetLoss(updated, data, config.loss)))
-        updated
-      }
+    trainWithRuntime(network, data, config, TrainingRuntime(Some(rng), onEpochComplete))
 
   /** Computes the average dataset loss with the current network parameters. */
   def datasetLoss(

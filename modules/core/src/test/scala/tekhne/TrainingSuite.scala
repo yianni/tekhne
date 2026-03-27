@@ -89,7 +89,8 @@ class TrainingSuite extends munit.FunSuite:
         epochs = 50_000,
         shuffleEachEpoch = true
       ),
-      new Random(42L)
+      new Random(42L),
+      _ => ()
     )
 
     val finalLoss = Training.datasetLoss(trained, xorData)
@@ -111,8 +112,8 @@ class TrainingSuite extends munit.FunSuite:
       shuffleEachEpoch = true
     )
 
-    val trained1 = Training.train(network, xorData, config, new Random(42L))
-    val trained2 = Training.train(network, xorData, config, new Random(42L))
+    val trained1 = Training.train(network, xorData, config, new Random(42L), _ => ())
+    val trained2 = Training.train(network, xorData, config, new Random(42L), _ => ())
 
     assertEquals(trained1, trained2)
   }
@@ -131,7 +132,7 @@ class TrainingSuite extends munit.FunSuite:
     )
 
     interceptMessage[IllegalArgumentException](
-      "requirement failed: shuffleEachEpoch = true requires the Training.train overload that accepts a Random"
+      "requirement failed: shuffleEachEpoch = true requires the fully explicit Training.train overload"
     ) {
       Training.train(network, xorData, config)
     }
@@ -150,8 +151,8 @@ class TrainingSuite extends munit.FunSuite:
       shuffleEachEpoch = true
     )
 
-    val trained1 = Training.train(network, xorData, config, new Random(42L))
-    val trained2 = Training.train(network, xorData, config, new Random(7L))
+    val trained1 = Training.train(network, xorData, config, new Random(42L), _ => ())
+    val trained2 = Training.train(network, xorData, config, new Random(7L), _ => ())
 
     assertNotEquals(trained1, trained2)
   }
@@ -241,8 +242,8 @@ class TrainingSuite extends munit.FunSuite:
       batchSize = 2
     )
 
-    val trained1 = Training.train(network, xorData, config, new Random(42L))
-    val trained2 = Training.train(network, xorData, config, new Random(42L))
+    val trained1 = Training.train(network, xorData, config, new Random(42L), _ => ())
+    val trained2 = Training.train(network, xorData, config, new Random(42L), _ => ())
 
     assertEquals(trained1, trained2)
   }
@@ -312,7 +313,7 @@ class TrainingSuite extends munit.FunSuite:
 
     val observed = ArrayBuffer.empty[EpochMetrics]
 
-    Training.train(network, xorData, config, metrics => observed += metrics)
+    Training.train(network, xorData, config, new Random(0L), metrics => observed += metrics)
 
     assertEquals(observed.map(_.epoch).toVector, Vector(1, 2, 3, 4))
     assert(observed.forall(metrics => metrics.loss.isFinite))
@@ -334,7 +335,7 @@ class TrainingSuite extends munit.FunSuite:
 
     val observed = ArrayBuffer.empty[EpochMetrics]
 
-    Training.train(network, xorData, config, metrics => observed += metrics)
+    Training.train(network, xorData, config, new Random(0L), metrics => observed += metrics)
 
     assertEquals(observed.length, 10)
     assert(observed.last.loss < observed.head.loss)
@@ -378,7 +379,7 @@ class TrainingSuite extends munit.FunSuite:
     )
 
     val initialLoss = Training.datasetLoss(network, linearlySeparableData, config.loss)
-    val trained     = Training.train(network, linearlySeparableData, config, new Random(42L))
+    val trained     = Training.train(network, linearlySeparableData, config, new Random(42L), _ => ())
     val finalLoss   = Training.datasetLoss(trained, linearlySeparableData, config.loss)
     val predictions = linearlySeparableData.map { case (input, _) =>
       Forward.predict(trained, input).head
