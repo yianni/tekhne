@@ -3,6 +3,24 @@ package tekhne
 import tekhne.Linalg._
 
 object Backprop:
+  private def calculateOutputDelta(
+      loss: LossFunction,
+      layer: Dense,
+      cache: LayerCache,
+      target: Vec
+  ): Vec =
+    (loss, layer.activation) match
+      case (LossFunction.BinaryCrossEntropy, Activation.Sigmoid) =>
+        // Differentiate from the logits directly so saturation cannot erase the gradient.
+        (cache.output - target) * (1.0 / cache.output.length.toDouble)
+      case _                                                     =>
+        Loss
+          .derivative(loss, cache.output, target)
+          .hadamard(cache.preActivation.map(ActivationOps.derivativeFromZ(
+            layer.activation,
+            _
+          )))
+
   private[tekhne] def gradients(
       network: Network,
       input: Vec,
@@ -21,13 +39,7 @@ object Backprop:
     val lastLayer        = network.layers(outputLayerIndex)
     val lastCache        = forwardPass.caches(outputLayerIndex)
 
-    val outputDelta =
-      Loss
-        .derivative(loss, forwardPass.output, target)
-        .hadamard(lastCache.preActivation.map(ActivationOps.derivativeFromZ(
-          lastLayer.activation,
-          _
-        )))
+    val outputDelta = calculateOutputDelta(loss, lastLayer, lastCache, target)
 
     val initialGrads = Vector.fill(network.layers.length)(DenseGrad(Vector.empty, Vector.empty))
     val outputGrad   = DenseGrad(outer(outputDelta, lastCache.input), outputDelta)

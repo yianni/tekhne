@@ -33,18 +33,77 @@ class NumericGradientSuite extends munit.FunSuite:
     compareGradients(analytic, numeric, tolerance = 1e-4)
   }
 
-  private def numericGradients(network: Network, input: Vec, target: Vec): Vector[DenseGrad] =
+  test("binary cross-entropy backprop gradients match numeric gradients") {
+    val network = Network(
+      Vector(
+        Dense(
+          weights = Vector(
+            Vector(0.15, -0.2),
+            Vector(0.4, 0.1)
+          ),
+          bias = Vector(0.05, -0.03),
+          activation = Activation.Tanh
+        ),
+        Dense(
+          weights = Vector(
+            Vector(0.25, -0.35),
+            Vector(-0.1, 0.3)
+          ),
+          bias = Vector(0.12, -0.08),
+          activation = Activation.Sigmoid
+        )
+      )
+    )
+
+    val input  = Vector(0.7, -0.4)
+    val target = Vector(0.8, 0.2)
+    val loss   = LossFunction.BinaryCrossEntropy
+
+    val analytic = Backprop.gradients(network, input, target, loss)
+    val numeric  = numericGradients(network, input, target, loss)
+
+    compareGradients(analytic, numeric, tolerance = 1e-4)
+  }
+
+  test("binary cross-entropy keeps corrective gradients for saturated sigmoid outputs") {
+    val network = Network(
+      Vector(
+        Dense(
+          weights = Vector(Vector(1000.0), Vector(-1000.0)),
+          bias = Vector(0.0, 0.0),
+          activation = Activation.Sigmoid
+        )
+      )
+    )
+
+    val gradients = Backprop.gradients(
+      network,
+      input = Vector(1.0),
+      target = Vector(0.0, 1.0),
+      loss = LossFunction.BinaryCrossEntropy
+    )
+
+    assertEquals(gradients.head.dWeights, Vector(Vector(0.5), Vector(-0.5)))
+    assertEquals(gradients.head.dBias, Vector(0.5, -0.5))
+  }
+
+  private def numericGradients(
+      network: Network,
+      input: Vec,
+      target: Vec,
+      loss: LossFunction = LossFunction.MeanSquaredError
+  ): Vector[DenseGrad] =
     network.layers.zipWithIndex.map { case (layer, layerIndex) =>
       val dWeights = layer.weights.zipWithIndex.map { case (row, rowIndex) =>
         row.indices.map { colIndex =>
-          centralDifference(network, input, target)((current, delta) =>
+          centralDifference(network, input, target, loss)((current, delta) =>
             updateWeight(current, layerIndex, rowIndex, colIndex)(delta)
           )
         }.toVector
       }
 
       val dBias = layer.bias.indices.map { biasIndex =>
-        centralDifference(network, input, target)((current, delta) =>
+        centralDifference(network, input, target, loss)((current, delta) =>
           updateBias(current, layerIndex, biasIndex)(delta)
         )
       }.toVector
@@ -55,12 +114,13 @@ class NumericGradientSuite extends munit.FunSuite:
   private def centralDifference(
       network: Network,
       input: Vec,
-      target: Vec
+      target: Vec,
+      loss: LossFunction
   )(
       update: (Network, Double) => Network
   ): Double =
-    val plus  = Loss.mse(Forward.predict(update(network, epsilon), input), target)
-    val minus = Loss.mse(Forward.predict(update(network, -epsilon), input), target)
+    val plus  = Loss.value(loss, Forward.predict(update(network, epsilon), input), target)
+    val minus = Loss.value(loss, Forward.predict(update(network, -epsilon), input), target)
     (plus - minus) / (2.0 * epsilon)
 
   private def updateWeight(
