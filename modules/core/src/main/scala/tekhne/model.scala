@@ -91,9 +91,16 @@ final case class TrainingConfig(
     batchSize: Int = 1,
     loss: LossFunction = LossFunction.MeanSquaredError
 ):
-  require(learningRate > 0.0, s"learning rate must be positive, got $learningRate")
+  TrainingConfig.requireValidLearningRate(learningRate)
   require(epochs > 0, s"epochs must be positive, got $epochs")
   require(batchSize > 0, s"batch size must be positive, got $batchSize")
+
+object TrainingConfig:
+  private[tekhne] def requireValidLearningRate(learningRate: Double): Unit =
+    require(
+      learningRate.isFinite && learningRate > 0.0,
+      s"learning rate must be finite and positive, got $learningRate"
+    )
 
 /** Metrics snapshot reported after an epoch completes. */
 final case class EpochMetrics(
