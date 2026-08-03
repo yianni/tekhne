@@ -6,11 +6,9 @@ import scala.util.Random
 
 /** Training helpers built around plain stochastic gradient descent. */
 object Training:
-  private def noOpMetricsHandler(metrics: EpochMetrics): Unit = ()
-
   private final case class TrainingRuntime(
       rng: Option[Random],
-      onEpochComplete: EpochMetrics => Unit
+      onEpochComplete: Option[EpochMetrics => Unit]
   )
 
   private def requireLossCompatibility(network: Network, loss: LossFunction): Unit =
@@ -102,13 +100,15 @@ object Training:
 
         val updated =
           trainEpoch(current, epochData, config.learningRate, config.batchSize, config.loss)
-        runtime.onEpochComplete(
-          EpochMetrics(
-            epoch = epoch,
-            loss = datasetLoss(updated, data, config.loss),
-            accuracy = datasetAccuracy(updated, data)
+        runtime.onEpochComplete.foreach { callback =>
+          callback(
+            EpochMetrics(
+              epoch = epoch,
+              loss = datasetLoss(updated, data, config.loss),
+              accuracy = datasetAccuracy(updated, data)
+            )
           )
-        )
+        }
         updated
       }
 
@@ -158,7 +158,7 @@ object Training:
       data: Vector[(Vec, Vec)],
       config: TrainingConfig
   ): Network =
-    trainWithRuntime(network, data, config, TrainingRuntime(None, noOpMetricsHandler))
+    trainWithRuntime(network, data, config, TrainingRuntime(None, None))
 
   /** Trains for the configured number of epochs.
     *
@@ -172,7 +172,7 @@ object Training:
       rng: Random,
       onEpochComplete: EpochMetrics => Unit
   ): Network =
-    trainWithRuntime(network, data, config, TrainingRuntime(Some(rng), onEpochComplete))
+    trainWithRuntime(network, data, config, TrainingRuntime(Some(rng), Some(onEpochComplete)))
 
   /** Computes the average dataset loss with the current network parameters. */
   def datasetLoss(
