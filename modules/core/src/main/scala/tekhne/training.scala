@@ -63,7 +63,6 @@ object Training:
       loss: LossFunction
   ): Network =
     require(batch.nonEmpty, "mini-batch must be non-empty")
-    require(learningRate > 0.0, s"learning rate must be positive, got $learningRate")
 
     val averagedGrads = averageGradients(batch.map { case (input, target) =>
       Backprop.gradients(network, input, target, loss)
@@ -120,7 +119,7 @@ object Training:
       learningRate: Double,
       loss: LossFunction = LossFunction.MeanSquaredError
   ): Network =
-    require(learningRate > 0.0, s"learning rate must be positive, got $learningRate")
+    TrainingConfig.requireValidLearningRate(learningRate)
     requireLossCompatibility(network, loss)
 
     val grads = Backprop.gradients(network, input, target, loss)
@@ -143,6 +142,8 @@ object Training:
       batchSize: Int = 1,
       loss: LossFunction = LossFunction.MeanSquaredError
   ): Network =
+    require(data.nonEmpty, "training data must be non-empty")
+    TrainingConfig.requireValidLearningRate(learningRate)
     require(batchSize > 0, s"batch size must be positive, got $batchSize")
     requireLossCompatibility(network, loss)
     batchData(data, batchSize).foldLeft(network) { case (current, batch) =>

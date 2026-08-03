@@ -34,6 +34,7 @@ object Backprop:
       forwardPass.output.length == target.length,
       s"target size ${target.length} does not match output size ${forwardPass.output.length}"
     )
+    Loss.requireValidTargets(loss, target)
 
     val outputLayerIndex = network.layers.length - 1
     val lastLayer        = network.layers(outputLayerIndex)
