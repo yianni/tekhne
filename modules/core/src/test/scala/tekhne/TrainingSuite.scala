@@ -176,6 +176,21 @@ class TrainingSuite extends munit.FunSuite:
     assertEquals(trainedWithBatching, trainedWithDefault)
   }
 
+  test("single-example epoch matches one training step") {
+    val network         = Network.random(
+      layerSizes = Vector(2, 3, 1),
+      activations = Vector(Activation.Tanh, Activation.Sigmoid),
+      rng = new Random(42L)
+    )
+    val (input, target) = xorData.head
+    val learningRate    = 0.1
+
+    val stepped = Training.step(network, input, target, learningRate)
+    val epoch   = Training.trainEpoch(network, Vector((input, target)), learningRate)
+
+    assertEquals(epoch, stepped)
+  }
+
   test("mini-batch training lowers xor loss") {
     val network = Network.random(
       layerSizes = Vector(2, 3, 1),
