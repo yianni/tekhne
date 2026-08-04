@@ -56,6 +56,21 @@ object Training:
       DenseGrad(averagedWeights, averagedBias)
     }
 
+  private def applyGradients(
+      network: Network,
+      gradients: Vector[DenseGrad],
+      learningRate: Double
+  ): Network =
+    val updatedLayers = network.layers.zip(gradients).map { case (layer, gradient) =>
+      val updatedWeights = layer.weights.zip(gradient.dWeights).map { case (weightsRow, gradRow) =>
+        weightsRow - (gradRow * learningRate)
+      }
+      val updatedBias    = layer.bias - (gradient.dBias * learningRate)
+      layer.copy(weights = updatedWeights, bias = updatedBias)
+    }
+
+    Network(updatedLayers)
+
   private def stepBatch(
       network: Network,
       batch: Vector[(Vec, Vec)],
@@ -64,19 +79,11 @@ object Training:
   ): Network =
     require(batch.nonEmpty, "mini-batch must be non-empty")
 
-    val averagedGrads = averageGradients(batch.map { case (input, target) =>
+    val averagedGradients = averageGradients(batch.map { case (input, target) =>
       Backprop.gradients(network, input, target, loss)
     })
 
-    val updatedLayers = network.layers.zip(averagedGrads).map { case (layer, grad) =>
-      val updatedWeights = layer.weights.zip(grad.dWeights).map { case (weightsRow, gradRow) =>
-        weightsRow - (gradRow * learningRate)
-      }
-      val updatedBias    = layer.bias - (grad.dBias * learningRate)
-      layer.copy(weights = updatedWeights, bias = updatedBias)
-    }
-
-    Network(updatedLayers)
+    applyGradients(network, averagedGradients, learningRate)
 
   private def trainWithRuntime(
       network: Network,
@@ -122,17 +129,8 @@ object Training:
     TrainingConfig.requireValidLearningRate(learningRate)
     requireLossCompatibility(network, loss)
 
-    val grads = Backprop.gradients(network, input, target, loss)
-
-    val updatedLayers = network.layers.zip(grads).map { case (layer, grad) =>
-      val updatedWeights = layer.weights.zip(grad.dWeights).map { case (weightsRow, gradRow) =>
-        weightsRow - (gradRow * learningRate)
-      }
-      val updatedBias    = layer.bias - (grad.dBias * learningRate)
-      layer.copy(weights = updatedWeights, bias = updatedBias)
-    }
-
-    Network(updatedLayers)
+    val gradients = Backprop.gradients(network, input, target, loss)
+    applyGradients(network, gradients, learningRate)
 
   /** Applies one full pass over the dataset in its current order. */
   def trainEpoch(
